@@ -1,4 +1,3 @@
-import platform from './img/platform.png'
 
 const canvas = document.querySelector('canvas')
 
@@ -41,23 +40,31 @@ class Player {
 }
 
 class Platform {
-    constructor({ x, y }) {
+    constructor({ x, y, image }) {
         this.position = { x, y }
         this.width = 200
         this.height = 20
+
+        this.image = image
     }
 
     draw() {
-        c.fillStyle = 'black'
+        // c.fillStyle = 'black'
+        c.drawImage(this.image, this.position.x, this.position.y)
         c.fillRect(this.position.x, this.position.y, this.width, this.height)
     }
 }
 
+const image = new Image()
+image.src = './img/platform.png'
+
 const player = new Player()
 const platforms = [
     new Platform({
-        x: 200, y: 400
-    }), new Platform({ x: 500, y: 500 })
+        x: 200,
+        y: 400,
+        image
+    }), new Platform({ x: 800, y: 600, image })
 ]
 
 const keys = {
