@@ -3,8 +3,9 @@ const canvas = document.querySelector('canvas')
 
 const c = canvas.getContext('2d')
 
-canvas.width = innerWidth
-canvas.height = innerHeight
+// static play area 16 x 9 screen
+canvas.width = 1024
+canvas.height = 527
 
 const gravity = 0.9
 
@@ -42,10 +43,9 @@ class Player {
 class Platform {
     constructor({ x, y, image }) {
         this.position = { x, y }
-        this.width = 200
-        this.height = 20
-
         this.image = image
+        this.width = image.width
+        this.height = image.height * .001
     }
 
     draw() {
@@ -55,17 +55,52 @@ class Platform {
     }
 }
 
-const image = new Image()
-image.src = './img/platform.png'
+class Scene {
+    constructor({ x, y, image }) {
+        this.position = { x, y }
+        this.image = image
+        this.width = image.width
+        this.height = image.height * .001
+    }
+
+    draw() {
+        // c.fillStyle = 'black'
+        c.drawImage(this.image, this.position.x, this.position.y)
+        c.fillRect(this.position.x, this.position.y, this.width, this.height)
+    }
+}
+
+function createImage(source) {
+    const image = new Image()
+    image.src = source
+    return image
+}
+
+const platformImg = createImage('./img/platform.png')
 
 const player = new Player()
 const platforms = [
     new Platform({
-        x: 200,
-        y: 400,
-        image
-    }), new Platform({ x: 800, y: 600, image })
+        x: -1,
+        y: 410,
+        image: platformImg
+    }), new Platform({ x: platformImg.width - 3, y: 410, image: platformImg })
 ]
+const scenes = [
+    new Scene({
+        x: -1,
+        y: -1,
+        image: createImage('./img/background.png')
+    }),
+    new Scene({
+        x: -1,
+        y: -1,
+        image: createImage('./img/hills.png')
+    })
+]
+
+
+
 
 const keys = {
     right: {
@@ -79,12 +114,18 @@ const keys = {
 let scrollOffset = 0
 
 function animate() {
-    requestAnimationFrame(animate)                  // recursively call
-    c.clearRect(0, 0, canvas.width, canvas.height)  // clear canvas, to maintain players shape
-    player.update()
-    platforms.forEach(platform => {
+    requestAnimationFrame(animate)                // recursively call
+    c.fillStyle = 'white'
+    c.fillRect(0, 0, canvas.width, canvas.height)  // clear canvas, to maintain players shape
+
+    // Stack images in order to be seen
+    scenes.forEach(scene => {                   // 1st draw background
+        scene.draw()
+    })
+    platforms.forEach(platform => {               // 2nd draw platforms, over background
         platform.draw()
     })
+    player.update()                               // 3rd draw player, over everything else
 
     // left/right key press logic
     if (keys.right.pressed
@@ -96,16 +137,22 @@ function animate() {
     } else {
         player.velocity.x = 0
 
-        // shifts platforms as player moves
+        // Shift environment as player moves
         if (keys.right.pressed) {
             scrollOffset += 5
             platforms.forEach(platform => {
                 platform.position.x -= 5
             })
+            scenes.forEach(scene => {
+                scene.position.x -= 3   //* Note: using 3 in lieu of 5 gives a paralax effect
+            })
         } else if (keys.left.pressed) {
             scrollOffset -= 5
             platforms.forEach(platform => {
                 platform.position.x += 5
+            })
+            scenes.forEach(scene => {
+                scene.position.x += 3   //* Note: using 3 in lieu of 5 gives a paralax effect
             })
         }
     }
@@ -131,7 +178,7 @@ animate()
 addEventListener('keydown', ({ code: key }) => {
     switch (key) {
         case 'ArrowUp':
-            player.velocity.y -= 10
+            player.velocity.y -= 7
             break
         case 'ArrowDown':
             break
