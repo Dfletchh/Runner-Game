@@ -5,7 +5,7 @@ const c = canvas.getContext('2d')
 
 // static play area 16 x 9 screen
 canvas.width = 1024
-canvas.height = 527
+canvas.height = 535
 
 const gravity = 0.9
 
@@ -20,16 +20,53 @@ class Player {
             x: 0,
             y: 1
         }
-        this.width = 30
-        this.height = 30
+        this.width = 66
+        this.height = 150
+        this.image = createImage('./img/spriteStandRight.png')
+        this.frames = 0
+        this.sprites = {
+            stand: {
+                right: createImage('./img/spriteStandRight.png'),
+                left: createImage('./img/spriteStandLeft.png'),
+                cropWidth: 177,
+                width: 66
+            },
+            run: {
+                right: createImage('./img/spriteRunRight.png'),
+                left: createImage('./img/spriteRunleft.png'),
+                cropWidth: 341,
+                width: 127.875
+            }
+        }
+        this.currentSprite = this.sprites.stand.right
+        this.currentCropWidth = this.sprites.stand.cropWidth
     }
 
     draw() {
-        c.fillStyle = 'blue'
-        c.fillRect(this.position.x, this.position.y, this.width, this.height)
+        c.drawImage(
+            this.currentSprite,
+            this.currentCropWidth * this.frames, // crop sprite
+            0,
+            this.currentCropWidth,
+            400,
+            this.position.x,
+            this.position.y,
+            this.width,
+            this.height
+        )
     }
 
     update() {
+        this.frames++
+        if (this.frames > 59 && (
+            this.currentSprite === this.sprites.stand.right || this.currentSprite === this.sprites.stand.left
+        )) {
+            this.frames = 0
+        } else if (this.frames > 29 && (
+            this.currentSprite === this.sprites.run.right || this.currentSprite === this.sprites.run.left
+        )) {
+            this.frames = 0
+        }
         this.draw()
         this.position.x += this.velocity.x
         this.position.y += this.velocity.y
@@ -49,7 +86,6 @@ class Platform {
     }
 
     draw() {
-        // c.fillStyle = 'black'
         c.drawImage(this.image, this.position.x, this.position.y)
         c.fillRect(this.position.x, this.position.y, this.width, this.height)
     }
@@ -81,7 +117,7 @@ let player = new Player()
 let platforms = []
 let scenes = []
 let scrollOffset = 0
-
+let lastKey
 const keys = {
     right: {
         pressed: false
@@ -182,7 +218,7 @@ function animate() {
     c.fillRect(0, 0, canvas.width, canvas.height)  // clear canvas, to maintain players shape
 
     // Stack images in order to be seen
-    scenes.forEach(scene => {                   // 1st draw background
+    scenes.forEach(scene => {                     // 1st draw background
         scene.draw()
     })
     platforms.forEach(platform => {               // 2nd draw platforms, over background
@@ -233,6 +269,45 @@ function animate() {
         }
     })
 
+    // Sprite animation conditional
+    if (
+        keys.right.pressed &&
+        lastKey === 'right' &&
+        player.currentSprite !== player.sprites.run.right
+    ) {
+        player.frames = 1
+        player.currentSprite = player.sprites.run.right
+        player.currentCropWidth = player.sprites.run.cropWidth
+        player.width = player.sprites.run.width
+    } else if (
+        keys.left.pressed &&
+        lastKey === 'left' &&
+        player.currentSprite !== player.sprites.run.left
+    ) {
+        player.frames = 1
+        player.currentSprite = player.sprites.run.left
+        player.currentCropWidth = player.sprites.run.cropWidth
+        player.width = player.sprites.run.width
+    } else if (
+        !keys.left.pressed &&
+        lastKey === 'left' &&
+        player.currentSprite !== player.sprites.stand.left
+    ) {
+        player.frames = 1
+        player.currentSprite = player.sprites.stand.left
+        player.currentCropWidth = player.sprites.stand.cropWidth
+        player.width = player.sprites.stand.width
+    } else if (
+        !keys.right.pressed &&
+        lastKey === 'right' &&
+        player.currentSprite !== player.sprites.stand.right
+    ) {
+        player.frames = 1
+        player.currentSprite = player.sprites.stand.right
+        player.currentCropWidth = player.sprites.stand.cropWidth
+        player.width = player.sprites.stand.width
+    }
+
     let levelDistance = platformImg.width * 5 + 500 - 3  // x distance from last platform
 
     // win condition 
@@ -259,9 +334,11 @@ addEventListener('keydown', ({ code: key }) => {
             break
         case 'ArrowLeft':
             keys.left.pressed = true
+            lastKey = 'left'
             break
         case 'ArrowRight':
             keys.right.pressed = true
+            lastKey = 'right'
             break
     }
 })
